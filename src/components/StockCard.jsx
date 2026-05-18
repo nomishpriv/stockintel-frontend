@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getVolumeConfirmation, getTradeSignal, getVolumeSpike, getSMC } from '../services/api';
+import { getVolumeConfirmation, getTradeSignal, getVolumeSpike, getSMC,getAccuracy } from '../services/api';
+
 
 function StockCard({ stock, onClick }) {
   const isPositive = stock.changePercent > 0;
@@ -8,12 +9,37 @@ function StockCard({ stock, onClick }) {
   const trade = getTradeSignal(stock);
   const spike = getVolumeSpike(stock);
   const [smc, setSmc] = useState(null);
+  const [accuracy, setAccuracy] = useState(null);
+  const firedRef = { current: false };
 
-  useEffect(() => {
-    getSMC(stock.symbol).then(res => {
-      if (res?.data?.success) setSmc(res.data);
-    }).catch(() => {});
-  }, [stock.symbol]);
+
+
+
+useEffect(() => {
+  if (firedRef.current) return;
+  
+  const el = document.getElementById(`card-${stock.symbol}`);
+  if (!el) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !firedRef.current) {
+      firedRef.current = true;
+      
+      getSMC(stock.symbol).then(res => {
+        if (res?.data?.success) setSmc(res.data);
+      }).catch(() => {});
+      
+      getAccuracy(stock.symbol).then(res => {
+        if (res?.data?.success) setAccuracy(res.data);
+      }).catch(() => {});
+      
+      observer.disconnect();
+    }
+  }, { rootMargin: '200px' });
+
+  observer.observe(el);
+  return () => observer.disconnect();
+}, [stock.symbol]);
 
   // Get top SMC signal
   const topSignal = smc?.choch?.length > 0 ? { type: 'CHOCH', color: '#a855f7', text: smc.choch[0].message } :
@@ -22,8 +48,8 @@ function StockCard({ stock, onClick }) {
                     null;
 
   return (
-    <div className="stock-card" onClick={onClick}>
-      <div className="card-top">
+<div className="stock-card" id={`card-${stock.symbol}`} onClick={onClick}>
+        <div className="card-top">
         <div className="card-symbol">{stock.symbol}</div>
         <div className="card-action" style={{ background: trade.color + '20', color: trade.color }}>
           {trade.action}
@@ -65,6 +91,12 @@ function StockCard({ stock, onClick }) {
         Vol: {(stock.volume / 1000).toFixed(0)}K
         {stock.rsi && <span style={{ marginLeft: 8, color: stock.rsi < 30 ? '#22c55e' : stock.rsi > 70 ? '#ef4444' : '#f59e0b' }}>RSI: {stock.rsi.toFixed(0)}</span>}
       </div>
+      {accuracy && accuracy.totalCompleted >= 3 && (
+  <div className="card-accuracy">
+    🎯 {accuracy.pivotAccuracy}% pivot | {accuracy.atrAccuracy}% ATR
+    <br />Best: {accuracy.bestMethod}
+  </div>
+)}
     </div>
   );
 }

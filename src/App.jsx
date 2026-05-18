@@ -4,6 +4,7 @@ import SearchBar from './components/SearchBar';
 import StockCard from './components/StockCard';
 import StockModal from './components/StockModal';
 import SectorHeatmap from './components/SectorHeatmap';
+import TestPanel from './components/TestPanel';
 import { getStocks, getMarketSummary, getOpportunities, getSectors } from './services/api';
 import './App.css';
 
@@ -122,6 +123,7 @@ const applyFilters = (stockList, search, filterType) => {
   </span>
 </div>
 
+
       <SearchBar onSearch={handleSearch} />
 
       <div className="stats">
@@ -135,6 +137,7 @@ const applyFilters = (stockList, search, filterType) => {
       </div>
 
       {selected && <StockModal stock={selected} onClose={() => setSelected(null)} />}
+        <TestPanel />
     </div>
   );
 }

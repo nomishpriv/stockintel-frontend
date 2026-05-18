@@ -367,3 +367,12 @@ body {
   margin-bottom: 8px;
   font-weight: 500;
 }
+.card-accuracy {
+  font-size: 9px;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  text-align: center;
+}

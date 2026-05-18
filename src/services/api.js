@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // baseURL: 'http://localhost:5001/api',
-  baseURL: 'https://saddlebrown-scorpion-534823.hostingersite.com/api',
+  baseURL: 'http://localhost:5001/api',
+  // baseURL: 'https://saddlebrown-scorpion-534823.hostingersite.com/api',
   timeout: 10000
 });
 
@@ -13,6 +13,10 @@ export const searchStocks = (query) => api.get(`/search?q=${query}`);
 export const getOpportunities = (limit = 10) => api.get(`/opportunities?limit=${limit}`);
 export const getSectors = () => api.get('/sectors');
 export const getSMC = (symbol) => api.get(`/smc/${symbol}`);
+export const predictStock = (symbol) => api.get(`/predict/${symbol}`);
+export const checkPrediction = (symbol) => api.get(`/predict/check/${symbol}`);
+export const getAccuracy = (symbol) => api.get(`/predict/accuracy/${symbol}`);
+export const getAllAccuracies = () => api.get('/predict/accuracy');
 
 // ========== INTRADAY HELPERS ==========
 
