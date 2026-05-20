@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MarketBar from './components/MarketBar';
 import SearchBar from './components/SearchBar';
 import StockCard from './components/StockCard';
@@ -20,6 +20,14 @@ function App() {
   const [filter, setFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');  // ← Add this line
   const [newsImpact, setNewsImpact] = useState(null);
+  const KMI30_SYMBOLS = [
+  'AIRLINK', 'ATRL', 'CNERGY', 'CPHL', 'DGKC', 'EFERT', 'ENGROH', 'FCCL',
+  'FFC', 'FFL', 'GAL', 'GHNI', 'GLAXO', 'HUBC', 'LUCK', 'MARI', 'MEBL',
+  'MLCF', 'MTL', 'NRL', 'OGDC', 'PAEL', 'PPL', 'PRL', 'PSO',
+  'SAZEW', 'SEARL', 'SNGP', 'SSGC', 'SYS'
+];
+const filterRef = useRef('ALL');
+
 
   useEffect(() => {
     loadData();
@@ -27,15 +35,39 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  const loadData = async () => {
+ const loadData = async () => {
     try {
       const [stocksRes, summaryRes, oppRes, sectorRes, newsRes] = await Promise.all([
         getStocks(), getMarketSummary(), getOpportunities(), getSectors(), getNewsImpact()
       ]);
 
       if (stocksRes.data?.success) {
-        setStocks(stocksRes.data.data);
-        setFiltered(stocksRes.data.data);
+        const allStocks = stocksRes.data.data;
+        setStocks(allStocks);
+        
+        // Re-apply current filter using ref (always up-to-date)
+        const currentFilter = filterRef.current;
+        if (currentFilter === 'KMI30') {
+          setFiltered(allStocks.filter(s => KMI30_SYMBOLS.includes(s.symbol)));
+        } else if (currentFilter === 'BUY') {
+          setFiltered(allStocks.filter(s => 
+            s.signal === 'BUY' || (s.changePercent > 1 && s.volume > s.volAvg10d * 1.2)
+          ));
+        } else if (currentFilter === 'SELL') {
+          setFiltered(allStocks.filter(s => 
+            s.signal === 'SELL' || (s.changePercent < -1 && s.volume > s.volAvg10d * 1.2)
+          ));
+        } else if (currentFilter === 'VOL_SPIKE') {
+          setFiltered(allStocks.filter(s => s.volume > s.volAvg10d * 2 && s.changePercent > 1));
+        } else if (currentFilter === 'VOL_FALL') {
+          setFiltered(allStocks.filter(s => s.volume > s.volAvg10d * 2 && s.changePercent < -1));
+        } else if (currentFilter === 'CIRCUIT') {
+          setFiltered(allStocks.filter(s => s.upperCircuit && s.lowerCircuit && ((s.upperCircuit - s.price) / s.price * 100 < 5 || (s.price - s.lowerCircuit) / s.price * 100 < 5)));
+        } else if (currentFilter === 'ABNORMAL') {
+          setFiltered(allStocks.filter(s => s.volume > s.volAvg10d * 3));
+        } else {
+          setFiltered(allStocks);
+        }
       }
       if (summaryRes.data?.success) setSummary(summaryRes.data.data);
       if (oppRes.data?.success) setOpportunities(oppRes.data.data);
@@ -53,37 +85,71 @@ function App() {
     applyFilters(stocks, query, filter);
   };
 
-  const handleFilter = (type) => {
-    setFilter(type);
-    applyFilters(stocks, searchTerm, type);
-  };
+ const handleFilter = (type) => {
+  setFilter(type);
+  filterRef.current = type;
+  applyFilters(stocks, searchTerm, type);
+};
 
-  const applyFilters = (stockList, search, filterType) => {
-    let result = stockList;
-
-    // Apply search
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(s =>
-        s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
-      );
-    }
-
-    // Apply filter
-    if (filterType === 'BUY') {
-      result = result.filter(s =>
-        s.signal === 'BUY' ||
-        (s.changePercent > 1 && s.volume > s.volAvg10d * 1.2)
-      );
-    } else if (filterType === 'SELL') {
-      result = result.filter(s =>
-        s.signal === 'SELL' ||
-        (s.changePercent < -1 && s.volume > s.volAvg10d * 1.2)
-      );
-    }
-
-    setFiltered(result);
-  };
+ const applyFilters = (stockList, search, filterType) => {
+  let result = stockList;
+  
+  // KMI30 first
+  if (filterType === 'KMI30') {
+    result = result.filter(s => KMI30_SYMBOLS.includes(s.symbol));
+  }
+  
+  // Volume Spike: volume > 2x average AND price up > 1%
+  if (filterType === 'VOL_SPIKE') {
+    result = result.filter(s => 
+      s.volume > s.volAvg10d * 2 && s.changePercent > 1
+    );
+  }
+  
+  // Volume Fall: volume > 2x average AND price down < -1%
+  if (filterType === 'VOL_FALL') {
+    result = result.filter(s => 
+      s.volume > s.volAvg10d * 2 && s.changePercent < -1
+    );
+  }
+  
+  // Near Circuit: price within 5% of upper or lower circuit
+  if (filterType === 'CIRCUIT') {
+    result = result.filter(s => 
+      s.upperCircuit && s.lowerCircuit &&
+      ((s.upperCircuit - s.price) / s.price * 100 < 5 ||
+       (s.price - s.lowerCircuit) / s.price * 100 < 5)
+    );
+  }
+  
+  // Abnormal Volume: volume > 3x average (either direction)
+  if (filterType === 'ABNORMAL') {
+    result = result.filter(s => 
+      s.volume > s.volAvg10d * 3
+    );
+  }
+  
+  // Search
+  if (search) {
+    const q = search.toLowerCase();
+    result = result.filter(s =>
+      s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
+    );
+  }
+  
+  // BUY/SELL
+  if (filterType === 'BUY') {
+    result = result.filter(s => 
+      s.signal === 'BUY' || (s.changePercent > 1 && s.volume > s.volAvg10d * 1.2)
+    );
+  } else if (filterType === 'SELL') {
+    result = result.filter(s => 
+      s.signal === 'SELL' || (s.changePercent < -1 && s.volume > s.volAvg10d * 1.2)
+    );
+  }
+  
+  setFiltered(result);
+};
 
   return (
     <div className="app">
@@ -130,6 +196,22 @@ function App() {
         <button className={`filter-btn sell ${filter === 'SELL' ? 'active' : ''}`} onClick={() => handleFilter('SELL')}>
           🔴 Sell Signals
         </button>
+<button className={`filter-btn kmi ${filter === 'KMI30' ? 'active' : ''}`} onClick={() => handleFilter('KMI30')}>
+  🏦 KMI-30
+</button>
+
+<button className={`filter-btn spike ${filter === 'VOL_SPIKE' ? 'active' : ''}`} onClick={() => handleFilter('VOL_SPIKE')}>
+  🚀 Vol Spike
+</button>
+<button className={`filter-btn fall ${filter === 'VOL_FALL' ? 'active' : ''}`} onClick={() => handleFilter('VOL_FALL')}>
+  📉 Vol Fall
+</button>
+<button className={`filter-btn circuit ${filter === 'CIRCUIT' ? 'active' : ''}`} onClick={() => handleFilter('CIRCUIT')}>
+  ⚡ Near Circuit
+</button>
+<button className={`filter-btn abnormal ${filter === 'ABNORMAL' ? 'active' : ''}`} onClick={() => handleFilter('ABNORMAL')}>
+  🔴 Abnormal Vol
+</button>
       </div>
       <div className="filter-counts">
         <span style={{ color: '#22c55e' }}>
