@@ -90,14 +90,14 @@ function StockCard({ stock, onClick }) {
       </div>
       {stock.bidPrice > 0 && (
   <div className="card-bidask">
-    <span className="bid" style={{ color: stock.bidAskRatio > 1.5 ? '#22c55e' : '#94a3b8' }}>
-      B: {stock.bidPrice} ({stock.bidVolume})
+    <span style={{ color: stock.bidAskRatio > 1.5 ? '#22c55e' : '#94a3b8' }}>
+      B: {stock.bidVolume?.toLocaleString()}
     </span>
-    <span className="spread" style={{ color: stock.spread < 0.1 ? '#22c55e' : '#f59e0b' }}>
-      {stock.spread}%
+    <span style={{ color: stock.spreadPct < 0.15 ? '#22c55e' : '#f59e0b' }}>
+      {stock.spreadPct}%
     </span>
-    <span className="ask" style={{ color: stock.bidAskRatio > 1.5 ? '#22c55e' : '#94a3b8' }}>
-      A: {stock.askPrice} ({stock.askVolume})
+    <span style={{ color: stock.bidAskRatio < 0.5 ? '#ef4444' : '#94a3b8' }}>
+      A: {stock.askVolume?.toLocaleString()}
     </span>
   </div>
 )}
