@@ -88,6 +88,19 @@ function StockCard({ stock, onClick }) {
         Vol: {safeVolume}K
         {safeRSI && <span style={{ marginLeft: 8, color: stock.rsi < 30 ? '#22c55e' : stock.rsi > 70 ? '#ef4444' : '#f59e0b' }}>RSI: {safeRSI}</span>}
       </div>
+      {stock.bidPrice > 0 && (
+  <div className="card-bidask">
+    <span className="bid" style={{ color: stock.bidAskRatio > 1.5 ? '#22c55e' : '#94a3b8' }}>
+      B: {stock.bidPrice} ({stock.bidVolume})
+    </span>
+    <span className="spread" style={{ color: stock.spread < 0.1 ? '#22c55e' : '#f59e0b' }}>
+      {stock.spread}%
+    </span>
+    <span className="ask" style={{ color: stock.bidAskRatio > 1.5 ? '#22c55e' : '#94a3b8' }}>
+      A: {stock.askPrice} ({stock.askVolume})
+    </span>
+  </div>
+)}
       {accuracy && accuracy.totalCompleted >= 3 && (
         <div className="card-accuracy">
           🎯 {accuracy.pivotAccuracy}% pivot | {accuracy.atrAccuracy}% ATR

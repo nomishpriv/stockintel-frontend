@@ -461,3 +461,13 @@ body {
 .filter-btn.fall.active { background: #ef4444; border-color: #ef4444; }
 .filter-btn.circuit.active { background: #a855f7; border-color: #a855f7; }
 .filter-btn.abnormal.active { background: #dc2626; border-color: #dc2626; }
+
+.card-bidask {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  margin-top: 4px;
+  padding: 2px 4px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 3px;
+}
