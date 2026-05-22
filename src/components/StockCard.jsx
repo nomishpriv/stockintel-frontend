@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getVolumeConfirmation, getTradeSignal, getVolumeSpike, getSMC, getAccuracy } from '../services/api';
+import { getVolumeConfirmation, getTradeSignal, getVolumeSpike, getSMC, getAccuracy,getOrderFlow  } from '../services/api';
 
 
 function StockCard({ stock, onClick }) {
@@ -11,8 +11,10 @@ function StockCard({ stock, onClick }) {
   const [smc, setSmc] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
   const firedRef = { current: false };
+  const [orderFlow, setOrderFlow] = useState(null);
 
-  useEffect(() => {
+
+ useEffect(() => {
     if (firedRef.current) return;
 
     const el = document.getElementById(`card-${stock.symbol}`);
@@ -28,6 +30,10 @@ function StockCard({ stock, onClick }) {
 
         getAccuracy(stock.symbol).then(res => {
           if (res?.data?.success) setAccuracy(res.data);
+        }).catch(() => { });
+
+        getOrderFlow(stock.symbol).then(res => {
+          if (res?.data?.success && res.data.ready) setOrderFlow(res.data);
         }).catch(() => { });
 
         observer.disconnect();
@@ -88,6 +94,8 @@ function StockCard({ stock, onClick }) {
         Vol: {safeVolume}K
         {safeRSI && <span style={{ marginLeft: 8, color: stock.rsi < 30 ? '#22c55e' : stock.rsi > 70 ? '#ef4444' : '#f59e0b' }}>RSI: {safeRSI}</span>}
       </div>
+
+
       {stock.bidPrice > 0 && (
   <div className="card-bidask">
     <span style={{ color: stock.bidAskRatio > 1.5 ? '#22c55e' : '#94a3b8' }}>
@@ -101,6 +109,19 @@ function StockCard({ stock, onClick }) {
     </span>
   </div>
 )}
+
+{orderFlow?.ready && (
+  <div className="card-orderflow" style={{ borderLeftColor: orderFlow.color }}>
+    <span style={{ color: orderFlow.color, fontSize: '10px' }}>
+      {orderFlow.signal} ({orderFlow.windowMinutes}m)
+    </span>
+    <span style={{ fontSize: '9px', color: '#64748b' }}>
+      Ratio: {orderFlow.overallRatio} | {orderFlow.snapshots} snaps
+    </span>
+  </div>
+)}
+
+
       {accuracy && accuracy.totalCompleted >= 3 && (
         <div className="card-accuracy">
           🎯 {accuracy.pivotAccuracy}% pivot | {accuracy.atrAccuracy}% ATR

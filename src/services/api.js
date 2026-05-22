@@ -19,6 +19,8 @@ export const getAccuracy = (symbol) => api.get(`/predict/accuracy/${symbol}`);
 export const getAllAccuracies = () => api.get('/predict/accuracy');
 export const getNewsImpact = () => api.get('/news/impact');
 export const getQuickSignal = () => api.get('/news/signal');
+export const getOrderFlow = (symbol) => api.get(`/orderflow/${symbol}`);
+
 
 // ========== INTRADAY HELPERS ==========
 
