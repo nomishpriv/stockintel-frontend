@@ -6,7 +6,7 @@ import StockModal from './components/StockModal';
 import SectorHeatmap from './components/SectorHeatmap';
 import TestPanel from './components/TestPanel';
 
-import { getStocks, getMarketSummary, getOpportunities, getSectors, getNewsImpact, getShariahTrades } from './services/api';
+import { getStocks, getMarketSummary, getOpportunities, getSectors, getNewsImpact, getShariahTrades, getInstitutionalActivity, getKSE100VolumeSpeed } from './services/api';
 import './App.css';
 
 function App() {
@@ -21,6 +21,8 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');  // ← Add this line
   const [newsImpact, setNewsImpact] = useState(null);
   const [shariahTrades, setShariahTrades] = useState(null);
+  const [instActivity, setInstActivity] = useState(null);
+  const [kseSpeed, setKseSpeed] = useState(null);
   const KMI30_SYMBOLS = [
   'AIRLINK', 'ATRL', 'CNERGY', 'CPHL', 'DGKC', 'EFERT', 'ENGROH', 'FCCL',
   'FFC', 'FFL', 'GAL', 'GHNI', 'GLAXO', 'HUBC', 'LUCK', 'MARI', 'MEBL',
@@ -36,11 +38,11 @@ const filterRef = useRef('ALL');
     return () => clearInterval(interval);
   }, []);
 
- const loadData = async () => {
+const loadData = async () => {
     try {
-      const [stocksRes, summaryRes, oppRes, sectorRes, newsRes, shariahRes] = await Promise.all([
-        getStocks(), getMarketSummary(), getOpportunities(), getSectors(), getNewsImpact(), getShariahTrades()
-      ]);
+      const [stocksRes, summaryRes, oppRes, sectorRes, newsRes, shariahRes, instRes, speedRes] = await Promise.all([
+  getStocks(), getMarketSummary(), getOpportunities(), getSectors(), getNewsImpact(), getShariahTrades(), getInstitutionalActivity(), getKSE100VolumeSpeed()
+]);
 
       if (stocksRes.data?.success) {
         const allStocks = stocksRes.data.data;
@@ -75,6 +77,9 @@ const filterRef = useRef('ALL');
       if (sectorRes.data?.success) setSectors(sectorRes.data.data);
       if (newsRes.data?.success) setNewsImpact(newsRes.data);
       if (shariahRes.data?.success) setShariahTrades(shariahRes.data);
+      if (instRes.data?.success) setInstActivity(instRes.data);
+      if (speedRes.data?.success) setKseSpeed(speedRes.data);
+
     } catch (e) {
       console.error('Load failed:', e);
     } finally {
@@ -168,6 +173,8 @@ const filterRef = useRef('ALL');
         {t.ticker} {t.action}
       </span>
     ))}
+  </div>
+)}
 
   {shariahTrades?.recommendations?.length > 0 && (
   <div className="shariah-bar">
@@ -182,6 +189,20 @@ const filterRef = useRef('ALL');
     )}
   </div>
 )}
+    {instActivity && (
+  <div className="inst-bar" style={{ borderLeftColor: instActivity.color }}>
+    <span>{instActivity.signal}</span>
+    <span>Vol: {instActivity.today.volume?.toLocaleString()} | σ: {instActivity.volumeSigma}</span>
+    {instActivity.bullishTrigger && <span>🟢 Institutions buying</span>}
+    <span>{instActivity.recommendation}</span>
+  </div>
+)}
+
+{kseSpeed && (
+  <div className="speed-bar" style={{ borderLeftColor: kseSpeed.color }}>
+    <span>⚡ KSE Vol Speed: {kseSpeed.trend}</span>
+    <span>{kseSpeed.perMinute?.toLocaleString()}/min</span>
+    <span>{kseSpeed.message}</span>
   </div>
 )}
       <SectorHeatmap sectors={sectors} />
