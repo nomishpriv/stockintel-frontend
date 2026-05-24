@@ -506,3 +506,37 @@ body {
   color: #64748b;
   font-weight: 600;
 }
+
+.shariah-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(34,197,94,0.05);
+  border: 1px solid rgba(34,197,94,0.15);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.shariah-title {
+  font-weight: 700;
+  color: #22c55e;
+  white-space: nowrap;
+}
+
+.shariah-chip {
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.shariah-context {
+  color: #64748b;
+  font-size: 10px;
+  margin-left: auto;
+}

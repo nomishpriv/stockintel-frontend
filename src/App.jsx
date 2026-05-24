@@ -6,7 +6,7 @@ import StockModal from './components/StockModal';
 import SectorHeatmap from './components/SectorHeatmap';
 import TestPanel from './components/TestPanel';
 
-import { getStocks, getMarketSummary, getOpportunities, getSectors, getNewsImpact } from './services/api';
+import { getStocks, getMarketSummary, getOpportunities, getSectors, getNewsImpact, getShariahTrades } from './services/api';
 import './App.css';
 
 function App() {
@@ -20,6 +20,7 @@ function App() {
   const [filter, setFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');  // ← Add this line
   const [newsImpact, setNewsImpact] = useState(null);
+  const [shariahTrades, setShariahTrades] = useState(null);
   const KMI30_SYMBOLS = [
   'AIRLINK', 'ATRL', 'CNERGY', 'CPHL', 'DGKC', 'EFERT', 'ENGROH', 'FCCL',
   'FFC', 'FFL', 'GAL', 'GHNI', 'GLAXO', 'HUBC', 'LUCK', 'MARI', 'MEBL',
@@ -37,8 +38,8 @@ const filterRef = useRef('ALL');
 
  const loadData = async () => {
     try {
-      const [stocksRes, summaryRes, oppRes, sectorRes, newsRes] = await Promise.all([
-        getStocks(), getMarketSummary(), getOpportunities(), getSectors(), getNewsImpact()
+      const [stocksRes, summaryRes, oppRes, sectorRes, newsRes, shariahRes] = await Promise.all([
+        getStocks(), getMarketSummary(), getOpportunities(), getSectors(), getNewsImpact(), getShariahTrades()
       ]);
 
       if (stocksRes.data?.success) {
@@ -73,6 +74,7 @@ const filterRef = useRef('ALL');
       if (oppRes.data?.success) setOpportunities(oppRes.data.data);
       if (sectorRes.data?.success) setSectors(sectorRes.data.data);
       if (newsRes.data?.success) setNewsImpact(newsRes.data);
+      if (shariahRes.data?.success) setShariahTrades(shariahRes.data);
     } catch (e) {
       console.error('Load failed:', e);
     } finally {
@@ -166,6 +168,20 @@ const filterRef = useRef('ALL');
         {t.ticker} {t.action}
       </span>
     ))}
+
+  {shariahTrades?.recommendations?.length > 0 && (
+  <div className="shariah-bar">
+    <span className="shariah-title">🕌 Shariah Long Trades</span>
+    {shariahTrades.recommendations.map((t, i) => (
+      <span key={i} className="shariah-chip" style={{ borderColor: t.color, color: t.color }}>
+        {t.symbol} ({t.score}) {t.recommendation}
+      </span>
+    ))}
+    {shariahTrades.marketContext && (
+      <span className="shariah-context">{shariahTrades.marketContext.summary?.slice(0, 60)}</span>
+    )}
+  </div>
+)}
   </div>
 )}
       <SectorHeatmap sectors={sectors} />
