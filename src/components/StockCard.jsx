@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getVolumeConfirmation, getTradeSignal, getVolumeSpike, getSMC, getAccuracy, getOrderFlow } from '../services/api';
 
-
-function StockCard({ stock, onClick }) {
+function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
   const isPositive = stock.changePercent > 0;
   const color = isPositive ? '#22c55e' : stock.changePercent < 0 ? '#ef4444' : '#94a3b8';
   const vol = getVolumeConfirmation(stock);
@@ -12,6 +11,7 @@ function StockCard({ stock, onClick }) {
   const [accuracy, setAccuracy] = useState(null);
   const firedRef = { current: false };
   const [orderFlow, setOrderFlow] = useState(null);
+  
 
 
   useEffect(() => {
@@ -59,7 +59,16 @@ function StockCard({ stock, onClick }) {
   return (
     <div className="stock-card" id={`card-${stock.symbol}`} onClick={onClick}>
       <div className="card-top">
-        <div className="card-symbol">{stock.symbol}</div>
+        <div className="card-symbol">
+          <span 
+            className={`watch-star ${isWatched ? 'watched' : ''}`}
+            onClick={onToggleWatch}
+            title={isWatched ? 'Remove from watchlist' : 'Add to watchlist'}
+          >
+            {isWatched ? '⭐' : '☆'}
+          </span>
+          {stock.symbol}
+        </div>
         <div className="card-action" style={{ background: (trade?.color || '#94a3b8') + '20', color: trade?.color || '#94a3b8' }}>
           {trade?.action || '---'}
         </div>

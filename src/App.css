@@ -566,3 +566,139 @@ body {
   font-size: 11px;
   flex-wrap: wrap;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEW ADDITIONS — paste at the bottom of your existing App.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Session + Refresh Bar ─────────────────────────────────────────────── */
+.session-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.session-badge {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.session-badge.session-open   { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+.session-badge.session-closed { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+
+.session-countdown { opacity: 0.75; font-weight: 400; }
+.session-pkt       { color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+.refresh-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.last-refreshed { color: #64748b; font-size: 11px; }
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.refresh-btn:hover:not(:disabled) { background: #334155; border-color: #475569; }
+.refresh-btn:disabled             { opacity: 0.6; cursor: not-allowed; }
+.refresh-btn.spinning             { animation: spin 1s linear infinite; }
+
+.refresh-countdown { color: #64748b; font-size: 10px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Sort Bar ──────────────────────────────────────────────────────────── */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.sort-bar::-webkit-scrollbar { display: none; }
+
+.sort-label {
+  color: #64748b;
+  font-size: 11px;
+  white-space: nowrap;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.sort-btn {
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.sort-btn:hover  { background: #1e293b; color: #e2e8f0; }
+.sort-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; font-weight: 600; }
+
+/* ── Watchlist filter button ────────────────────────────────────────────── */
+.filter-btn.watchlist       { border-color: #eab308; }
+.filter-btn.watchlist:hover { background: rgba(234,179,8,0.12); }
+.filter-btn.watchlist.active{ background: #eab308; color: #000; border-color: #eab308; }
+
+.watchlist-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.35);
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* ── Search keyboard hint ────────────────────────────────────────────────── */
+.search-hint {
+  text-align: right;
+  padding: 2px 14px;
+  font-size: 10px;
+  color: #475569;
+}
+kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #94a3b8;
+  font-family: monospace;
+  font-size: 10px;
+}
+
+/* ── Watchlist stat chip ─────────────────────────────────────────────────── */
+.stat-watchlist { color: #eab308; }
+

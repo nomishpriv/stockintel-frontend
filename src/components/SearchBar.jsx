@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function SearchBar({ onSearch }) {
+function SearchBar({ onSearch, inputRef }) {  // ← NEW: accept inputRef prop
   const [value, setValue] = useState('');
 
   const handleChange = (e) => {
@@ -11,6 +11,7 @@ function SearchBar({ onSearch }) {
   return (
     <div className="search-bar">
       <input
+        ref={inputRef}                          // ← NEW: attach ref for '/' shortcut
         type="text"
         value={value}
         onChange={handleChange}
