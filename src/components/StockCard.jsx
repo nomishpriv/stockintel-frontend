@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getVolumeConfirmation, getTradeSignal, getVolumeSpike, getSMC, getAccuracy, getOrderFlow } from '../services/api';
 
 function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
@@ -9,10 +9,12 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
   const spike = getVolumeSpike(stock);
   const [smc, setSmc] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
-  const firedRef = { current: false };
+  // FIX: Replaced plain object with useRef so the flag survives re-renders.
+  // A plain object { current: false } gets recreated on every render, so
+  // the IntersectionObserver fires multiple times per card if React
+  // re-renders the parent (e.g., during auto-refresh or filter changes).
+  const firedRef = useRef(false);
   const [orderFlow, setOrderFlow] = useState(null);
-  
-
 
   useEffect(() => {
     if (firedRef.current) return;
@@ -51,16 +53,31 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
           smc?.orderBlocks?.length > 0 ? { type: 'OB', color: smc.orderBlocks[0].type.includes('BULLISH') ? '#22c55e' : '#ef4444', text: smc.orderBlocks[0].message } :
             null;
 
-  const safePrice = stock.price != null ? stock.price.toFixed(2) : '---';
-  const safeVolume = stock.volume != null ? (stock.volume / 1000).toFixed(0) : '0';
-  const safeRSI = stock.rsi != null ? stock.rsi.toFixed(0) : null;
+  // FIX: Guard against null / undefined / NaN values so .toFixed() doesn't
+  // throw TypeError when the API omits a field. Also guards against NaN
+  // produced by upstream 0-division or missing data.
+  const safePrice = (stock.price != null && !Number.isNaN(stock.price)) ? stock.price.toFixed(2) : '---';
+  const safeVolume = (stock.volume != null && !Number.isNaN(stock.volume)) ? (stock.volume / 1000).toFixed(0) : '0';
+  const safeRSI = (stock.rsi != null && !Number.isNaN(stock.rsi)) ? stock.rsi.toFixed(0) : null;
   const safeName = stock.name ? stock.name.slice(0, 25) : stock.symbol;
+
+  // FIX: Guard against null / undefined / NaN in trade levels so .toFixed()
+  // doesn't crash when the API returns incomplete prediction data.
+  const safeEntry = (trade?.entry != null && !Number.isNaN(trade.entry)) ? trade.entry.toFixed(2) : null;
+  const safeTarget = (trade?.target != null && !Number.isNaN(trade.target)) ? trade.target.toFixed(2) : '---';
+  const safeSL = (trade?.stopLoss != null && !Number.isNaN(trade.stopLoss)) ? trade.stopLoss.toFixed(2) : '---';
+
+  // FIX: Guard against null / undefined / NaN in bid/ask display values so
+  // .toLocaleString() and .toFixed() don't throw when the API omits them.
+  const safeBidVol = (stock.bidVolume != null && !Number.isNaN(stock.bidVolume)) ? stock.bidVolume.toLocaleString() : '0';
+  const safeAskVol = (stock.askVolume != null && !Number.isNaN(stock.askVolume)) ? stock.askVolume.toLocaleString() : '0';
+  const safeSpread = (stock.spreadPct != null && !Number.isNaN(stock.spreadPct)) ? stock.spreadPct.toFixed(2) : '0.00';
 
   return (
     <div className="stock-card" id={`card-${stock.symbol}`} onClick={onClick}>
       <div className="card-top">
         <div className="card-symbol">
-          <span 
+          <span
             className={`watch-star ${isWatched ? 'watched' : ''}`}
             onClick={onToggleWatch}
             title={isWatched ? 'Remove from watchlist' : 'Add to watchlist'}
@@ -119,11 +136,14 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
         <div className="card-spike">{spike.message}</div>
       )}
 
-      {trade?.entry != null && (
+      {/* FIX: Changed condition from trade?.entry != null to safeEntry != null
+           so the levels section only renders when the value is actually usable.
+           Also guards all three fields with NaN checks. */}
+      {safeEntry != null && (
         <div className="card-trade-levels">
-          <div className="trade-level entry">Entry: ₨{trade.entry.toFixed(2)}</div>
-          <div className="trade-level target">Target: ₨{trade.target?.toFixed(2) || '---'}</div>
-          <div className="trade-level sl">SL: ₨{trade.stopLoss?.toFixed(2) || '---'}</div>
+          <div className="trade-level entry">Entry: ₨{safeEntry}</div>
+          <div className="trade-level target">Target: ₨{safeTarget}</div>
+          <div className="trade-level sl">SL: ₨{safeSL}</div>
         </div>
       )}
 
@@ -132,17 +152,18 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
         {safeRSI && <span style={{ marginLeft: 8, color: stock.rsi < 30 ? '#22c55e' : stock.rsi > 70 ? '#ef4444' : '#f59e0b' }}>RSI: {safeRSI}</span>}
       </div>
 
-
-      {stock.bidPrice > 0 && (
+      {/* FIX: Guard against bidPrice being 0, null, undefined, or NaN so
+           the bid/ask row only shows when genuine data exists. */}
+      {(stock.bidPrice != null && !Number.isNaN(stock.bidPrice) && stock.bidPrice > 0) && (
         <div className="card-bidask">
           <span style={{ color: stock.bidAskRatio > 1.5 ? '#22c55e' : '#94a3b8' }}>
-            B: {stock.bidVolume?.toLocaleString()}
+            B: {safeBidVol}
           </span>
           <span style={{ color: stock.spreadPct < 0.15 ? '#22c55e' : '#f59e0b' }}>
-            {stock.spreadPct}%
+            {safeSpread}%
           </span>
           <span style={{ color: stock.bidAskRatio < 0.5 ? '#ef4444' : '#94a3b8' }}>
-            A: {stock.askVolume?.toLocaleString()}
+            A: {safeAskVol}
           </span>
         </div>
       )}
@@ -158,11 +179,14 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
         </div>
       )}
 
-
+      {/* FIX: Guard against NaN in accuracy display so the card doesn't show
+           "NaN% pivot | NaN% ATR" when the API returns null or incomplete data. */}
       {accuracy && accuracy.totalCompleted >= 3 && (
         <div className="card-accuracy">
-          🎯 {accuracy.pivotAccuracy}% pivot | {accuracy.atrAccuracy}% ATR
-          <br />Best: {accuracy.bestMethod}
+          🎯 {(accuracy.pivotAccuracy != null && !Number.isNaN(accuracy.pivotAccuracy)) ? accuracy.pivotAccuracy + '% pivot' : '— pivot'}
+          {' | '}
+          {(accuracy.atrAccuracy != null && !Number.isNaN(accuracy.atrAccuracy)) ? accuracy.atrAccuracy + '% ATR' : '— ATR'}
+          <br />Best: {accuracy.bestMethod || '—'}
         </div>
       )}
     </div>

@@ -18,7 +18,11 @@ const PSX_CLOSE_MIN  = 30;
 function getPSXSessionInfo() {
   const now = new Date();
   // Convert to PKT (UTC+5)
-  const pkt = new Date(now.getTime() + (5 * 60 - now.getTimezoneOffset()) * 60000);
+  // FIX: Timezone offset math was inverted — now.getTimezoneOffset() returns
+  // the difference between local time and UTC in minutes (positive for
+  // timezones behind UTC, negative for ahead). The old formula added the
+  // offset when it should be subtracted for correct conversion to PKT.
+  const pkt = new Date(now.getTime() + (5 * 60 + now.getTimezoneOffset()) * 60000);
   const day = pkt.getDay(); // 0=Sun, 6=Sat
   const h = pkt.getHours();
   const m = pkt.getMinutes();
@@ -85,12 +89,21 @@ function App() {
   // ────────────────────────────────────────────────────────────────────────
 
   // ── NEW: Refresh countdown ticker ────────────────────────────────────────
+  // FIX: Countdown timer is recreated on every lastRefreshed change, which
+  // happens every minute when auto-refresh fires. This creates overlapping
+  // intervals that fight each other and cause the countdown to jump
+  // erratically. Added a ref to track the interval ID and clear it before
+  // starting a new one.
+  const countdownRef = useRef(null);
   useEffect(() => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
     setRefreshCountdown(60);
-    const tick = setInterval(() => {
+    countdownRef.current = setInterval(() => {
       setRefreshCountdown(prev => (prev <= 1 ? 60 : prev - 1));
     }, 1000);
-    return () => clearInterval(tick);
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
   }, [lastRefreshed]);
   // ────────────────────────────────────────────────────────────────────────
 
@@ -209,7 +222,15 @@ function App() {
     if (sort === 'CHANGE_DESC') return sorted.sort((a, b) => b.changePercent - a.changePercent);
     if (sort === 'CHANGE_ASC')  return sorted.sort((a, b) => a.changePercent - b.changePercent);
     if (sort === 'VOL_DESC')    return sorted.sort((a, b) => b.volume - a.volume);
-    if (sort === 'VOL_RATIO')   return sorted.sort((a, b) => (b.volume / (b.volAvg10d || 1)) - (a.volume / (a.volAvg10d || 1)));
+    // FIX: VOL_RATIO sort used || 1 fallback which gives a ratio of volume when
+    // volAvg10d is 0 (missing data). This falsely pushes stocks with missing
+    // averages to the top. Changed to guard with > 0 so only stocks with
+    // genuine averages compete; missing ones fall to the bottom.
+    if (sort === 'VOL_RATIO')   return sorted.sort((a, b) => {
+      const aRatio = a.volAvg10d > 0 ? a.volume / a.volAvg10d : -1;
+      const bRatio = b.volAvg10d > 0 ? b.volume / b.volAvg10d : -1;
+      return bRatio - aRatio;
+    });
     if (sort === 'PRICE_DESC')  return sorted.sort((a, b) => b.price - a.price);
     if (sort === 'PRICE_ASC')   return sorted.sort((a, b) => a.price - b.price);
     return sorted;
