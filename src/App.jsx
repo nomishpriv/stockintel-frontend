@@ -5,6 +5,8 @@ import StockCard from './components/StockCard';
 import StockModal from './components/StockModal';
 import SectorHeatmap from './components/SectorHeatmap';
 import TestPanel from './components/TestPanel';
+import PredictionSystem from './components/PredictionSystem';
+
 
 import { getStocks, getMarketSummary, getOpportunities, getSectors, getNewsImpact, getShariahTrades, getInstitutionalActivity, getKSE100VolumeSpeed } from './services/api';
 import './App.css';
@@ -59,6 +61,7 @@ function App() {
   const [shariahTrades, setShariahTrades] = useState(null);
   const [instActivity, setInstActivity] = useState(null);
   const [kseSpeed, setKseSpeed] = useState(null);
+  const [showPredictionDashboard, setShowPredictionDashboard] = useState(false);
 
   // ── NEW: Sort, Watchlist, Refresh, Session ───────────────────────────────
   const [sortBy, setSortBy] = useState('DEFAULT');           // sort control
@@ -314,6 +317,13 @@ function App() {
               Updated {lastRefreshed.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           )}
+          <button 
+  className="prediction-dashboard-btn"
+  onClick={() => setShowPredictionDashboard(true)}
+  title="Open Prediction Dashboard"
+>
+  🎯 Predictions
+</button>
           <button
             className={`refresh-btn ${isRefreshing ? 'spinning' : ''}`}
             onClick={handleManualRefresh}
@@ -495,6 +505,23 @@ function App() {
         />
       )}
       <TestPanel />
+      {showPredictionDashboard && (
+  <div className="prediction-dashboard-overlay" onClick={() => setShowPredictionDashboard(false)}>
+    <div className="prediction-dashboard-container" onClick={e => e.stopPropagation()}>
+      <div className="prediction-dashboard-header">
+        <h2>🎯 Prediction Dashboard</h2>
+        <button 
+          className="new-window-btn"
+          onClick={() => window.open('/prediction-dashboard', '_blank', 'width=1200,height=800')}
+        >
+          🔗 Open in New Window
+        </button>
+        <button className="close-btn" onClick={() => setShowPredictionDashboard(false)}>✕</button>
+      </div>
+      <PredictionSystem />
+    </div>
+  </div>
+)}
     </div>
   );
 }

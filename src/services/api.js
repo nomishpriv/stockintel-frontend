@@ -23,6 +23,9 @@ export const getOrderFlow = (symbol) => api.get(`/orderflow/${symbol}`);
 export const getShariahTrades = () => api.get('/shariah/trades');
 export const getInstitutionalActivity = () => api.get('/institutional');
 export const getKSE100VolumeSpeed = () => api.get('/kse100/volume-speed');
+// Predictions
+export const getPredictions = () => api.get('/predict/accuracy');
+export const createPrediction = (symbol) => api.get(`/predict/${symbol}`);
 
 // ========== INTRADAY HELPERS ==========
 
