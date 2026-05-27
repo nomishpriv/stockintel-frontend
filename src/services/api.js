@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // baseURL: 'http://localhost:5001/api',
-   baseURL: 'https://saddlebrown-scorpion-534823.hostingersite.com/api',
+  baseURL: 'http://localhost:5001/api',
+  //  baseURL: 'https://saddlebrown-scorpion-534823.hostingersite.com/api',
   timeout: 10000
 });
 
@@ -22,6 +22,7 @@ export const getQuickSignal = () => api.get('/news/signal');
 export const getOrderFlow = (symbol) => api.get(`/orderflow/${symbol}`);
 export const getShariahTrades = () => api.get('/shariah/trades');
 export const getInstitutionalActivity = () => api.get('/institutional');
+export const getKSE100Volume = () => api.get('/kse100/volume');
 export const getKSE100VolumeSpeed = () => api.get('/kse100/volume-speed');
 // Predictions
 export const getPredictions = () => api.get('/predict/accuracy');

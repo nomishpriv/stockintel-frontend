@@ -8,7 +8,7 @@ import TestPanel from './components/TestPanel';
 import PredictionSystem from './components/PredictionSystem';
 
 
-import { getStocks, getMarketSummary, getOpportunities, getSectors, getNewsImpact, getShariahTrades, getInstitutionalActivity, getKSE100VolumeSpeed } from './services/api';
+import { getStocks, getMarketSummary, getOpportunities, getSectors, getNewsImpact, getShariahTrades, getInstitutionalActivity, getKSE100VolumeSpeed, getKSE100Volume } from './services/api';
 import './App.css';
 
 // ── NEW: PSX session helper ──────────────────────────────────────────────────
@@ -60,7 +60,8 @@ function App() {
   const [newsImpact, setNewsImpact] = useState(null);
   const [shariahTrades, setShariahTrades] = useState(null);
   const [instActivity, setInstActivity] = useState(null);
-  const [kseSpeed, setKseSpeed] = useState(null);
+const [kseVolume, setKseVolume] = useState(null);
+const [kseSpeed, setKseSpeed] = useState(null);
   const [showPredictionDashboard, setShowPredictionDashboard] = useState(false);
 
   // ── NEW: Sort, Watchlist, Refresh, Session ───────────────────────────────
@@ -147,9 +148,9 @@ function App() {
 
   const loadData = async () => {
     try {
-      const [stocksRes, summaryRes, oppRes, sectorRes, newsRes, shariahRes, instRes, speedRes] = await Promise.all([
-        getStocks(), getMarketSummary(), getOpportunities(), getSectors(), getNewsImpact(), getShariahTrades(), getInstitutionalActivity(), getKSE100VolumeSpeed()
-      ]);
+      const [stocksRes, summaryRes, oppRes, sectorRes, newsRes, shariahRes, instRes, speedRes, kseVolRes] = await Promise.all([
+  getStocks(), getMarketSummary(), getOpportunities(), getSectors(), getNewsImpact(), getShariahTrades(), getInstitutionalActivity(), getKSE100VolumeSpeed(), getKSE100Volume()
+]);
 
       if (stocksRes.data?.success) {
         const allStocks = stocksRes.data.data;
@@ -188,6 +189,7 @@ function App() {
       if (shariahRes.data?.success) setShariahTrades(shariahRes.data);
       if (instRes.data?.success) setInstActivity(instRes.data);
       if (speedRes.data?.success) setKseSpeed(speedRes.data);
+if (kseVolRes.data?.success) setKseVolume(kseVolRes.data);
 
       setLastRefreshed(new Date()); // ← NEW: record refresh time
     } catch (e) {
@@ -374,13 +376,17 @@ function App() {
         </div>
       )}
 
-      {kseSpeed && (
-        <div className="speed-bar" style={{ borderLeftColor: kseSpeed.color }}>
-          <span>⚡ KSE Vol Speed: {kseSpeed.trend}</span>
-          <span>{kseSpeed.perMinute?.toLocaleString()}/min</span>
-          <span>{kseSpeed.message}</span>
-        </div>
-      )}
+      {kseVolume && kseSpeed && (
+  <div className="kse-live-bar" style={{ borderLeftColor: kseSpeed.color }}>
+    <span>{kseVolume.emoji} KSE100: {kseVolume.indexValue?.toLocaleString()}</span>
+    <span style={{ color: kseVolume.changePercent > 0 ? '#22c55e' : '#ef4444' }}>
+      {kseVolume.changePercent > 0 ? '+' : ''}{kseVolume.changePercent}%
+    </span>
+    <span>Vol: {kseVolume.ratioVs10Day}% of avg</span>
+    <span>⚡ {kseSpeed.trend}: {kseSpeed.perMinute?.toLocaleString()}/min</span>
+    <span>{kseSpeed.message}</span>
+  </div>
+)}
 
       <SectorHeatmap sectors={sectors} />
 
