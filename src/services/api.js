@@ -28,6 +28,9 @@ export const getKSE100VolumeSpeed = () => api.get('/kse100/volume-speed');
 export const getPredictions = () => api.get('/predict/accuracy');
 export const createPrediction = (symbol) => api.get(`/predict/${symbol}`);
 
+export const getTodayResults = () => api.get('/results/today');
+export const getStockResult = (symbol) => api.get(`/results/${symbol}`);
+
 // ========== INTRADAY HELPERS ==========
 
 export function getVolumeConfirmation(stock) {

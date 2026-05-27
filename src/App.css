@@ -1264,3 +1264,29 @@ kbd {
   opacity: 0.55;
   font-size: 12px;
 }
+
+.results-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.results-title { font-weight: 700; color: #a78bfa; white-space: nowrap; }
+
+.result-chip {
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: none;
+  overflow: visible;
+}

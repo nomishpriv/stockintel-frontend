@@ -10,7 +10,7 @@ import PredictionSystem from './components/PredictionSystem';
 import {
   getStocks, getMarketSummary, getOpportunities, getSectors,
   getNewsImpact, getShariahTrades, getInstitutionalActivity,
-  getKSE100VolumeSpeed, getKSE100Volume
+  getKSE100VolumeSpeed, getKSE100Volume, getTodayResults
 } from './services/api';
 import './App.css';
 
@@ -57,6 +57,7 @@ function App() {
   const [kseVolume,    setKseVolume]    = useState(null);
   const [kseSpeed,     setKseSpeed]     = useState(null);
   const [showPredictionDashboard, setShowPredictionDashboard] = useState(false);
+  const [todayResults, setTodayResults] = useState(null);
 
   const [sortBy,    setSortBy]    = useState('DEFAULT');
   const [watchlist, setWatchlist] = useState(() => {
@@ -126,11 +127,11 @@ function App() {
 
   const loadData = async () => {
     try {
-      const [stocksRes, summaryRes, oppRes, sectorRes, newsRes, shariahRes, instRes, speedRes, kseVolRes] =
+      const [stocksRes, summaryRes, oppRes, sectorRes, newsRes, shariahRes, instRes, speedRes, kseVolRes, resultsRes] =
         await Promise.all([
           getStocks(), getMarketSummary(), getOpportunities(), getSectors(),
           getNewsImpact(), getShariahTrades(), getInstitutionalActivity(),
-          getKSE100VolumeSpeed(), getKSE100Volume()
+          getKSE100VolumeSpeed(), getKSE100Volume(), getTodayResults()
         ]);
 
       if (stocksRes.data?.success) {
@@ -157,6 +158,7 @@ function App() {
       if (instRes.data?.success)    setInstActivity(instRes.data);
       if (speedRes.data?.success)   setKseSpeed(speedRes.data);
       if (kseVolRes.data?.success)  setKseVolume(kseVolRes.data);
+      if (resultsRes.data?.success) setTodayResults(resultsRes.data);
       setLastRefreshed(new Date());
     } catch (e) {
       console.error('Load failed:', e);
@@ -352,6 +354,20 @@ function App() {
             )}
           </div>
         )}
+
+        {/* Results Impact */}
+        {todayResults?.hasResults && (
+  <div className="results-bar">
+    <span className="results-title">📊 Results Today: {todayResults.totalResults} companies</span>
+    <span style={{ color: '#22c55e' }}>🟢 {todayResults.positiveResults}</span>
+    <span style={{ color: '#ef4444' }}>🔴 {todayResults.negativeResults}</span>
+    {todayResults.topImpacts?.map((r, i) => (
+      <span key={i} className="result-chip" style={{ borderColor: r.color, color: r.color }}>
+        {r.symbol}: {r.signal?.slice(0, 30)}
+      </span>
+    ))}
+  </div>
+)}
 
         {/* Institutional activity */}
         {instActivity && (
