@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
-  //  baseURL: 'https://saddlebrown-scorpion-534823.hostingersite.com/api',
+  // baseURL: 'http://localhost:5001/api',
+   baseURL: 'https://saddlebrown-scorpion-534823.hostingersite.com/api',
   timeout: 10000
 });
 
