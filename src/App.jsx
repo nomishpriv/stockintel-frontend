@@ -168,7 +168,7 @@ function App() {
   }, []);
 
   // Re-apply filters when any level changes
-  useEffect(() => { setFiltered(applyAllFilters(stocks)); }, [indexFilter, signalFilter, actionFilter, searchTerm, sortBy]);
+  useEffect(() => { setFiltered(applyAllFilters(stocks)); }, [stocks, indexFilter, signalFilter, actionFilter, searchTerm, sortBy]);
 
   const loadData = async () => {
     try {
@@ -179,7 +179,6 @@ function App() {
       ]);
       if (stocksRes.data?.success) {
         setStocks(stocksRes.data.data);
-        setFiltered(applyAllFilters(stocksRes.data.data));
       }
       if (summaryRes.data?.success) setSummary(summaryRes.data.data);
       if (oppRes.data?.success)     setOpportunities(oppRes.data.data);
