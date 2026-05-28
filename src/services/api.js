@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // baseURL: 'http://localhost:5001/api',
-   baseURL: 'https://saddlebrown-scorpion-534823.hostingersite.com/api',
+  baseURL: 'http://localhost:5001/api',
+  //  baseURL: 'https://saddlebrown-scorpion-534823.hostingersite.com/api',
   timeout: 10000
 });
 
@@ -46,96 +46,95 @@ export function getVolumeConfirmation(stock) {
 }
 
 export function getTradeSignal(stock) {
-  const price = stock.price;
-  const pivot = stock.pivot;
-  const s1 = stock.s1;
-  const s2 = stock.s2;
-  const r1 = stock.r1;
-  const r2 = stock.r2;
-  const rsi = stock.rsi;
+  const price = stock.price || 0;
+  const pivot = stock.pivot || 0;
+  const s1 = stock.s1 || 0;
+  const s2 = stock.s2 || 0;
+  const r1 = stock.r1 || 0;
+  const r2 = stock.r2 || 0;
+  const rsi = stock.rsi || 50;
   const vol = getVolumeConfirmation(stock);
-  const change = stock.changePercent;
+  const change = stock.changePercent || 0;
+  const bidAskRatio = stock.bidAskRatio || 1;
+  const spreadPct = stock.spreadPct || 0;
 
-  // Entry near support
-  if (price <= s1 && vol.level !== 'THIN' && rsi < 50) {
-    return {
-      action: 'BUY',
-      entry: s1,
-      target: r1,
-      stopLoss: s2,
-      reason: 'Price near S1 support + volume OK',
-      color: '#22c55e'
-    };
-  }
-  
-  // Entry near S2 (stronger support)
-  if (price <= s2 && vol.level !== 'THIN') {
-    return {
-      action: 'STRONG_BUY',
-      entry: s2,
-      target: pivot,
-      stopLoss: stock.lowerCircuit,
-      reason: 'Price at S2 strong support',
-      color: '#10b981'
-    };
-  }
+  let score = 50;
+  const reasons = [];
 
-  // Exit near resistance
-  if (price >= r1 && change > 0 && rsi > 60) {
-    return {
-      action: 'SELL',
-      entry: r1,
-      target: pivot,
-      stopLoss: r2,
-      reason: 'Price at R1 resistance — take profit',
-      color: '#ef4444'
-    };
-  }
+  // 1. Price vs Pivots (0-25 points)
+  if (price > pivot) { score += 5; reasons.push('Above pivot'); }
+  if (price <= s1 && price > s2) { score += 10; reasons.push('Near S1 support — good entry'); }
+  if (price <= s2) { score += 15; reasons.push('Near S2 strong support — buy zone'); }
+  if (price >= r1 && price < r2) { score -= 10; reasons.push('Near R1 resistance — take profit'); }
+  if (price >= r2) { score -= 15; reasons.push('Near R2 — overbought zone'); }
 
-  // High volume breakout
-  if (vol.level === 'EXPLOSIVE' && change > 0 && price > pivot) {
-    return {
-      action: 'BREAKOUT_BUY',
-      entry: price,
-      target: r2,
-      stopLoss: pivot,
-      reason: 'High volume breakout above pivot',
-      color: '#22c55e'
-    };
-  }
+  // 2. Volume Confirmation (0-20 points)
+  if (vol.level === 'EXPLOSIVE') { score += change > 0 ? 18 : -18; reasons.push('Explosive volume'); }
+  else if (vol.level === 'HIGH') { score += change > 0 ? 12 : -12; reasons.push('High volume confirming'); }
+  else if (vol.level === 'ABOVE_AVG') { score += change > 0 ? 6 : -6; reasons.push('Above avg volume'); }
+  else if (vol.level === 'THIN' || vol.level === 'BELOW_AVG') { score -= 15; reasons.push('Volume too thin — avoid'); }
 
-  // High volume breakdown
-  if (vol.level === 'EXPLOSIVE' && change < 0 && price < pivot) {
-    return {
-      action: 'BREAKOUT_SELL',
-      entry: price,
-      target: s2,
-      stopLoss: pivot,
-      reason: 'High volume breakdown below pivot',
-      color: '#ef4444'
-    };
-  }
+  // 3. RSI (0-15 points)
+  if (rsi < 30) { score += 12; reasons.push('RSI oversold — bounce likely'); }
+  else if (rsi < 40) { score += 6; reasons.push('RSI near oversold'); }
+  else if (rsi > 70) { score -= 12; reasons.push('RSI overbought — pullback likely'); }
+  else if (rsi > 60) { score -= 6; reasons.push('RSI near overbought'); }
 
-  // Low volume — avoid
-  if (vol.level === 'THIN' || vol.level === 'BELOW_AVG') {
-    return {
-      action: 'AVOID',
-      entry: null,
-      target: null,
-      stopLoss: null,
-      reason: `Volume too low (${vol.message})`,
-      color: '#6b7280'
-    };
-  }
+  // 4. Bid/Ask Order Flow (0-15 points)
+  if (bidAskRatio > 2) { score += 12; reasons.push('Strong bid wall — buying pressure'); }
+  else if (bidAskRatio > 1.5) { score += 7; reasons.push('Bid pressure building'); }
+  else if (bidAskRatio < 0.3) { score -= 12; reasons.push('Strong ask wall — selling pressure'); }
+  else if (bidAskRatio < 0.5) { score -= 7; reasons.push('Ask pressure building'); }
 
+  // 5. Spread / Liquidity (0-5 points)
+  if (spreadPct > 0 && spreadPct < 0.1) { score += 5; reasons.push('Tight spread — liquid'); }
+  else if (spreadPct > 0.5) { score -= 5; reasons.push('Wide spread — illiquid'); }
+
+  // 6. Momentum (0-10 points)
+  if (change > 3) { score += 8; reasons.push('Strong momentum up'); }
+  else if (change > 1) { score += 4; reasons.push('Positive momentum'); }
+  else if (change < -3) { score -= 8; reasons.push('Strong momentum down'); }
+  else if (change < -1) { score -= 4; reasons.push('Negative momentum'); }
+
+  // 7. Volume + Price alignment bonus
+  if (vol.level === 'HIGH' && change > 1) { score += 5; reasons.push('Volume confirms uptrend'); }
+  else if (vol.level === 'HIGH' && change < -1) { score -= 5; reasons.push('Volume confirms downtrend'); }
+
+  // Clamp score
+  score = Math.min(100, Math.max(0, Math.round(score)));
+
+  // Determine action
+  let action, color;
+  if (score >= 75) { action = 'STRONG_BUY'; color = '#10b981'; }
+  else if (score >= 62) { action = 'BUY'; color = '#22c55e'; }
+  else if (score >= 52) { action = 'WEAK_BUY'; color = '#84cc16'; }
+  else if (score >= 48) { action = 'WAIT'; color = '#f59e0b'; }
+  else if (score >= 38) { action = 'WEAK_SELL'; color = '#f97316'; }
+  else if (score >= 25) { action = 'SELL'; color = '#ef4444'; }
+  else { action = 'STRONG_SELL'; color = '#dc2626'; }
+
+  // Entry/Target/SL based on action
+  let entry = null, target = null, stopLoss = null;
+
+  if (action.includes('BUY') && s1 > 0) {
+    entry = price <= s1 ? s1 : price;
+    target = r1 > price ? r1 : r2 > price ? r2 : +(price * 1.02).toFixed(2);
+    stopLoss = s2 > 0 ? s2 : s1 > 0 ? s1 : +(price * 0.98).toFixed(2);
+  } else if (action.includes('SELL') && r1 > 0) {
+    entry = price >= r1 ? r1 : price;
+    target = s1 < price ? s1 : s2 < price ? s2 : +(price * 0.98).toFixed(2);
+    stopLoss = r2 > 0 ? r2 : r1 > 0 ? r1 : +(price * 1.02).toFixed(2);
+  }
 
   return {
-    action: 'WAIT',
-    entry: null,
-    target: null,
-    stopLoss: null,
-    reason: 'No clear setup — wait for entry near pivot levels',
-    color: '#f59e0b'
+    action,
+    color,
+    score,
+    entry,
+    target,
+    stopLoss,
+    reason: reasons.slice(0, 4).join('; ') || 'No clear signal',
+    reasons
   };
 }
 
