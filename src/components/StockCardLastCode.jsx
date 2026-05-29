@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getVolumeConfirmation, getTradeSignal, getVolumeSpike, getSMC, getAccuracy, getOrderFlow, getUnifiedSignal } from '../services/api';
+import { getVolumeConfirmation, getTradeSignal, getVolumeSpike, getSMC, getAccuracy, getOrderFlow } from '../services/api';
 
 function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
   const isPositive = stock.changePercent > 0;
@@ -9,8 +9,10 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
   const spike = getVolumeSpike(stock);
   const [smc, setSmc] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
-  const [unified, setUnified] = useState(null);
   // FIX: Replaced plain object with useRef so the flag survives re-renders.
+  // A plain object { current: false } gets recreated on every render, so
+  // the IntersectionObserver fires multiple times per card if React
+  // re-renders the parent (e.g., during auto-refresh or filter changes).
   const firedRef = useRef(false);
   const [orderFlow, setOrderFlow] = useState(null);
 
@@ -36,11 +38,6 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
           if (res?.data?.success && res.data.ready) setOrderFlow(res.data);
         }).catch(() => { });
 
-        // NEW: Unified super signal (appended at bottom, no layout change)
-        getUnifiedSignal(stock.symbol).then(res => {
-          if (res?.data?.success) setUnified(res.data);
-        }).catch(() => { });
-
         observer.disconnect();
       }
     }, { rootMargin: '200px' });
@@ -56,22 +53,28 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
           smc?.orderBlocks?.length > 0 ? { type: 'OB', color: smc.orderBlocks[0].type.includes('BULLISH') ? '#22c55e' : '#ef4444', text: smc.orderBlocks[0].message } :
             null;
 
+  // FIX: Guard against null / undefined / NaN values so .toFixed() doesn't
+  // throw TypeError when the API omits a field. Also guards against NaN
+  // produced by upstream 0-division or missing data.
   const safePrice = (stock.price != null && !Number.isNaN(stock.price)) ? stock.price.toFixed(2) : '---';
   const safeVolume = (stock.volume != null && !Number.isNaN(stock.volume)) ? (stock.volume / 1000).toFixed(0) : '0';
   const safeRSI = (stock.rsi != null && !Number.isNaN(stock.rsi)) ? stock.rsi.toFixed(0) : null;
   const safeName = stock.name ? stock.name.slice(0, 25) : stock.symbol;
 
+  // FIX: Guard against null / undefined / NaN in trade levels so .toFixed()
+  // doesn't crash when the API returns incomplete prediction data.
   const safeEntry = (trade?.entry != null && !Number.isNaN(trade.entry)) ? trade.entry.toFixed(2) : null;
   const safeTarget = (trade?.target != null && !Number.isNaN(trade.target)) ? trade.target.toFixed(2) : '---';
   const safeSL = (trade?.stopLoss != null && !Number.isNaN(trade.stopLoss)) ? trade.stopLoss.toFixed(2) : '---';
 
+  // FIX: Guard against null / undefined / NaN in bid/ask display values so
+  // .toLocaleString() and .toFixed() don't throw when the API omits them.
   const safeBidVol = (stock.bidVolume != null && !Number.isNaN(stock.bidVolume)) ? stock.bidVolume.toLocaleString() : '0';
   const safeAskVol = (stock.askVolume != null && !Number.isNaN(stock.askVolume)) ? stock.askVolume.toLocaleString() : '0';
   const safeSpread = (stock.spreadPct != null && !Number.isNaN(stock.spreadPct)) ? stock.spreadPct.toFixed(2) : '0.00';
 
   return (
     <div className="stock-card" id={`card-${stock.symbol}`} onClick={onClick}>
-      {/* ─── EXISTING TOP ─── */}
       <div className="card-top">
         <div className="card-symbol">
           <span
@@ -93,7 +96,7 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
         {isPositive ? '+' : ''}{stock.changePercent}%
       </div>
 
-      {/* ─── EXISTING SMC COMPACT ─── */}
+      {/* SMC Compact Section */}
       {smc && (
         <div className="card-smc-compact">
           {topSignal && (
@@ -133,7 +136,9 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
         <div className="card-spike">{spike.message}</div>
       )}
 
-      {/* ─── EXISTING TRADE LEVELS ─── */}
+      {/* FIX: Changed condition from trade?.entry != null to safeEntry != null
+           so the levels section only renders when the value is actually usable.
+           Also guards all three fields with NaN checks. */}
       {safeEntry != null && (
         <div className="card-trade-levels">
           <div className="trade-level entry">Entry: ₨{safeEntry}</div>
@@ -147,7 +152,8 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
         {safeRSI && <span style={{ marginLeft: 8, color: stock.rsi < 30 ? '#22c55e' : stock.rsi > 70 ? '#ef4444' : '#f59e0b' }}>RSI: {safeRSI}</span>}
       </div>
 
-      {/* ─── EXISTING BID/ASK ─── */}
+      {/* FIX: Guard against bidPrice being 0, null, undefined, or NaN so
+           the bid/ask row only shows when genuine data exists. */}
       {(stock.bidPrice != null && !Number.isNaN(stock.bidPrice) && stock.bidPrice > 0) && (
         <div className="card-bidask">
           <span style={{ color: stock.bidAskRatio > 1.5 ? '#22c55e' : '#94a3b8' }}>
@@ -173,46 +179,14 @@ function StockCard({ stock, onClick, isWatched, onToggleWatch }) {
         </div>
       )}
 
-      {/* ─── EXISTING ACCURACY ─── */}
+      {/* FIX: Guard against NaN in accuracy display so the card doesn't show
+           "NaN% pivot | NaN% ATR" when the API returns null or incomplete data. */}
       {accuracy && accuracy.totalCompleted >= 3 && (
         <div className="card-accuracy">
           🎯 {(accuracy.pivotAccuracy != null && !Number.isNaN(accuracy.pivotAccuracy)) ? accuracy.pivotAccuracy + '% pivot' : '— pivot'}
           {' | '}
           {(accuracy.atrAccuracy != null && !Number.isNaN(accuracy.atrAccuracy)) ? accuracy.atrAccuracy + '% ATR' : '— ATR'}
           <br />Best: {accuracy.bestMethod || '—'}
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════
-          NEW: UNIFIED SUPER SIGNAL (BOTTOM ONLY — NO LAYOUT CHANGE)
-          ═══════════════════════════════════════════════════════ */}
-      {unified && (
-        <div className="card-unified" style={{ borderTop: `2px solid ${unified.signalMeta?.color || '#e2e8f0'}` }}>
-          <div className="unified-badge" style={{
-            background: (unified.signalMeta?.color || '#94a3b8') + '18',
-            color: unified.signalMeta?.color || '#94a3b8',
-            border: `1px solid ${(unified.signalMeta?.color || '#94a3b8') + '40'}`
-          }}>
-            {unified.signalMeta?.emoji} {unified.signalMeta?.action}
-            <span className="unified-confidence">{unified.confidence}% conf</span>
-          </div>
-
-          <div className="unified-desc">
-            {unified.description}
-          </div>
-
-          {unified.levels?.entry && unified.levels?.target && (
-            <div className="unified-levels">
-              <span className="lvl-entry">E: ₨{unified.levels.entry.toFixed(2)}</span>
-              <span className="lvl-target">T: ₨{unified.levels.target.toFixed(2)}</span>
-              <span className="lvl-sl">SL: ₨{unified.levels.stopLoss?.toFixed(2)}</span>
-              <span className="lvl-risk" style={{
-                color: unified.risk === 'LOW' ? '#22c55e' : unified.risk === 'MEDIUM' ? '#f59e0b' : '#ef4444'
-              }}>
-                {unified.risk} risk
-              </span>
-            </div>
-          )}
         </div>
       )}
     </div>

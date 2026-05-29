@@ -1290,3 +1290,50 @@ kbd {
   max-width: none;
   overflow: visible;
 }
+
+/* ─── NEW UNIFIED BOTTOM BLOCK stock card start ─── */
+.card-unified {
+  margin-top: 10px;
+  padding-top: 10px;
+  background: #fafafa;
+  border-radius: 0 0 8px 8px;
+}
+
+.unified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.unified-confidence {
+  font-size: 10px;
+  opacity: 0.85;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.unified-desc {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.unified-levels {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  flex-wrap: wrap;
+}
+
+.lvl-entry { color: #22c55e; font-weight: 700; }
+.lvl-target { color: #3b82f6; font-weight: 700; }
+.lvl-sl { color: #ef4444; font-weight: 700; }
+.lvl-risk { font-weight: 700; text-transform: uppercase; font-size: 9px; }
+
+/* ─── NEW UNIFIED BOTTOM BLOCK stock card end ─── */

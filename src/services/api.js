@@ -31,6 +31,9 @@ export const createPrediction = (symbol) => api.get(`/predict/${symbol}`);
 export const getTodayResults = () => api.get('/results/today');
 export const getStockResult = (symbol) => api.get(`/results/${symbol}`);
 
+export const getUnifiedSignal = (symbol) =>
+  api.get(`/unified-signal/${symbol}`);
+
 // ========== INTRADAY HELPERS ==========
 
 export function getVolumeConfirmation(stock) {
