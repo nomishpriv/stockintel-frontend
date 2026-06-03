@@ -78,6 +78,8 @@ function App() {
   const [kseSpeed,     setKseSpeed]     = useState(null);
   const [showPredictionDashboard, setShowPredictionDashboard] = useState(false);
   const [todayResults, setTodayResults] = useState(null);
+  const [showAnnouncements, setShowAnnouncements] = useState(false);
+  const [annFilter, setAnnFilter] = useState('ALL');
 
   const [sortBy,    setSortBy]    = useState('DEFAULT');
   const [watchlist, setWatchlist] = useState(() => {
@@ -257,14 +259,271 @@ function App() {
             {shariahTrades.marketContext && <span className="intel-note">{shariahTrades.marketContext.summary?.slice(0, 80)}</span>}
           </div>
         )}
-        {todayResults?.hasResults && (
-          <div className="results-bar">
-            <span className="results-title">📊 Results Today: {todayResults.totalResults} companies</span>
-            <span style={{ color: '#22c55e' }}>🟢 {todayResults.positiveResults}</span>
-            <span style={{ color: '#ef4444' }}>🔴 {todayResults.negativeResults}</span>
-            {todayResults.topImpacts?.map((r, i) => <span key={i} className="result-chip" style={{ borderColor: r.color, color: r.color }}>{r.symbol}: {r.signal?.slice(0, 30)}</span>)}
+
+{todayResults?.hasAnnouncements && (
+  <>
+    {/* ── COMPACT BAR (click to expand) ── */}
+    <div 
+      className="results-bar" 
+      onClick={() => setShowAnnouncements(!showAnnouncements)}
+      style={{ 
+        flexWrap: 'wrap', 
+        gap: '6px', 
+        cursor: 'pointer',
+        userSelect: 'none',
+        transition: 'background 0.2s'
+      }}
+    >
+      <span className="results-title">
+        📢 {todayResults.totalAnnouncements} Announcements
+        <span style={{ fontSize: '0.7rem', opacity: 0.6, marginLeft: '8px' }}>
+          {showAnnouncements ? '▲ click to collapse' : '▼ click to expand'}
+        </span>
+      </span>
+      
+      {todayResults.typeCounts?.FR > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#3b82f622', color: '#3b82f6', padding: '2px 8px', borderRadius: '10px' }}>
+          📊 {todayResults.typeCounts.FR}
+        </span>
+      )}
+      {todayResults.typeCounts?.MI > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#14b8a622', color: '#14b8a6', padding: '2px 8px', borderRadius: '10px' }}>
+          📋 {todayResults.typeCounts.MI}
+        </span>
+      )}
+      {todayResults.typeCounts?.DIV > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#22c55e22', color: '#22c55e', padding: '2px 8px', borderRadius: '10px' }}>
+          💰 {todayResults.typeCounts.DIV}
+        </span>
+      )}
+      {todayResults.typeCounts?.BON > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#8b5cf622', color: '#8b5cf6', padding: '2px 8px', borderRadius: '10px' }}>
+          🎁 {todayResults.typeCounts.BON}
+        </span>
+      )}
+      {todayResults.typeCounts?.RGT > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#f59e0b22', color: '#f59e0b', padding: '2px 8px', borderRadius: '10px' }}>
+          📜 {todayResults.typeCounts.RGT}
+        </span>
+      )}
+      {todayResults.typeCounts?.SPL > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#06b6d422', color: '#06b6d4', padding: '2px 8px', borderRadius: '10px' }}>
+          ✂️ {todayResults.typeCounts.SPL}
+        </span>
+      )}
+      {todayResults.typeCounts?.BM > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#6366f122', color: '#6366f1', padding: '2px 8px', borderRadius: '10px' }}>
+          📅 {todayResults.typeCounts.BM}
+        </span>
+      )}
+      {todayResults.typeCounts?.AGM > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#ec489922', color: '#ec4899', padding: '2px 8px', borderRadius: '10px' }}>
+          🏛️ {todayResults.typeCounts.AGM}
+        </span>
+      )}
+      {todayResults.typeCounts?.E > 0 && (
+        <span style={{ fontSize: '0.75rem', background: '#6b728022', color: '#6b7280', padding: '2px 8px', borderRadius: '10px' }}>
+          📡 {todayResults.typeCounts.E}
+        </span>
+      )}
+
+      {todayResults.totalResults > 0 && (
+        <>
+          <span style={{ color: '#22c55e', fontSize: '0.8rem' }}>🟢 {todayResults.positiveResults}</span>
+          <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>🔴 {todayResults.negativeResults}</span>
+        </>
+      )}
+
+      {/* Top 2 chips always visible */}
+      {todayResults.topImpacts?.slice(0, 2).map((r, i) => (
+        <span key={i} className="result-chip" style={{ borderColor: r.color, color: r.color, fontSize: '0.8rem' }}>
+          {r.typeIcon || ''} {r.symbol}: {r.signal?.slice(0, 30)}
+        </span>
+      ))}
+    </div>
+
+    {/* ── EXPANDED PANEL ── */}
+    {showAnnouncements && (
+      <div style={{
+        background: '#0f172a',
+        border: '1px solid #1e293b',
+        borderRadius: '12px',
+        padding: '16px',
+        marginTop: '8px',
+        maxHeight: '70vh',
+        overflowY: 'auto'
+      }}>
+        {/* Filter tabs */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', borderBottom: '1px solid #1e293b', paddingBottom: '12px' }}>
+          {[
+            { key: 'ALL', label: `All (${todayResults.totalAnnouncements})`, icon: '📢' },
+            { key: 'FR', label: `Results (${todayResults.typeCounts?.FR || 0})`, icon: '📊', color: '#3b82f6' },
+            { key: 'MI', label: `Material Info (${todayResults.typeCounts?.MI || 0})`, icon: '📋', color: '#14b8a6' },
+            { key: 'DIV', label: `Dividend (${todayResults.typeCounts?.DIV || 0})`, icon: '💰', color: '#22c55e' },
+            { key: 'BON', label: `Bonus (${todayResults.typeCounts?.BON || 0})`, icon: '🎁', color: '#8b5cf6' },
+            { key: 'RGT', label: `Rights (${todayResults.typeCounts?.RGT || 0})`, icon: '📜', color: '#f59e0b' },
+            { key: 'SPL', label: `Split (${todayResults.typeCounts?.SPL || 0})`, icon: '✂️', color: '#06b6d4' },
+            { key: 'BM', label: `Board (${todayResults.typeCounts?.BM || 0})`, icon: '📅', color: '#6366f1' },
+            { key: 'AGM', label: `AGM (${todayResults.typeCounts?.AGM || 0})`, icon: '🏛️', color: '#ec4899' },
+            { key: 'E', label: `Notices (${todayResults.typeCounts?.E || 0})`, icon: '📡', color: '#6b7280' },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={(e) => { e.stopPropagation(); setAnnFilter(tab.key); }}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '20px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                background: annFilter === tab.key ? (tab.color || '#3b82f6') : '#1e293b',
+                color: annFilter === tab.key ? '#fff' : '#94a3b8',
+                transition: 'all 0.2s'
+              }}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Announcement cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {(annFilter === 'ALL' 
+            ? todayResults.announcements 
+            : todayResults.byType?.[annFilter] || []
+          ).map(a => (
+            <div key={a.id} style={{
+              background: '#1e293b',
+              borderLeft: `4px solid ${a.color || a.typeColor || '#64748b'}`,
+              borderRadius: '8px',
+              padding: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              {/* Header row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#fff' }}>{a.symbol}</span>
+                  <span style={{
+                    fontSize: '0.75rem',
+                    padding: '3px 10px',
+                    borderRadius: '12px',
+                    background: (a.typeColor || '#64748b') + '22',
+                    color: a.typeColor || '#64748b',
+                    border: `1px solid ${(a.typeColor || '#64748b')}44`,
+                    fontWeight: 600
+                  }}>
+                    {a.typeIcon} {a.typeLabel}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    {new Date(a.date).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <span style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  color: a.score > 0 ? '#22c55e' : a.score < 0 ? '#ef4444' : '#94a3b8'
+                }}>
+                  {a.score > 0 ? '+' : ''}{a.score}
+                </span>
+              </div>
+
+              {/* Full signal text — wraps naturally */}
+              <div style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: 1.5, wordBreak: 'break-word' }}>
+                {a.signal}
+              </div>
+
+              {/* Details */}
+              {a.details?.materialSubject && (
+                <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                  Subject: {a.details.materialSubject}
+                </div>
+              )}
+              {a.details?.eps !== undefined && (
+                <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', color: '#94a3b8', flexWrap: 'wrap' }}>
+                  <span>EPS: {a.details.eps}</span>
+                  <span>Prev: {a.details.epsPrev}</span>
+                  <span>PAT: {(a.details.pat / 1000000).toFixed(1)}M</span>
+                  {a.details.epsChange !== 0 && (
+                    <span style={{ color: a.details.epsChange > 0 ? '#22c55e' : '#ef4444' }}>
+                      Change: {a.details.epsChange}
+                    </span>
+                  )}
+                </div>
+              )}
+              {a.details?.dividend > 0 && (
+                <div style={{ fontSize: '0.8rem', color: '#22c55e' }}>
+                  💰 Dividend: {a.details.dividend}% | Ex-Date: {a.details.exDate || 'TBA'}
+                </div>
+              )}
+              {a.details?.bonus > 0 && (
+                <div style={{ fontSize: '0.8rem', color: '#8b5cf6' }}>
+                  🎁 Bonus: {a.details.bonus}%
+                </div>
+              )}
+              {a.details?.rightPrice > 0 && (
+                <div style={{ fontSize: '0.8rem', color: '#f59e0b' }}>
+                  📜 Rights: {a.details.rightIssue} @ PKR {a.details.rightPrice}
+                </div>
+              )}
+              {a.details?.meetingTime && (
+                <div style={{ fontSize: '0.8rem', color: '#6366f1' }}>
+                  📅 Meeting: {a.details.meetingTime} {a.details.meetingDate ? `| ${a.details.meetingDate}` : ''}
+                </div>
+              )}
+              {a.details?.matchedKeywords?.length > 0 && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  {a.details.matchedKeywords.map((kw, i) => (
+                    <span key={i} style={{ fontSize: '0.7rem', background: '#0f172a', color: '#64748b', padding: '2px 8px', borderRadius: '10px' }}>
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
+                {a.pdf && (
+                  <a 
+                    href={`https://dps.psx.com.pk/download/document/${a.pdf}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    style={{ fontSize: '0.75rem', color: '#60a5fa', textDecoration: 'none' }}
+                  >
+                    📄 PDF
+                  </a>
+                )}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setSelected(a.symbol); }}
+                  style={{ 
+                    fontSize: '0.75rem', 
+                    color: '#94a3b8', 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    padding: 0
+                  }}
+                >
+                  📈 View Stock
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {((annFilter === 'ALL' ? todayResults.announcements : todayResults.byType?.[annFilter]) || []).length === 0 && (
+          <div style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>
+            No announcements in this category
           </div>
         )}
+      </div>
+    )}
+  </>
+)}
+
         {instActivity && (
           <div className="intel-card inst-bar" style={{ borderLeftColor: instActivity.color }}>
             <span className="intel-tag">🏢 INSTITUTIONAL</span>
